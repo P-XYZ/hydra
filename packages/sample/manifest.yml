@@ -16,6 +16,7 @@ typegen:
   events:
     - balances.Transfer
     - nft.FixedPriceSaleList
+    - nft.FixedPriceSaleComplete
   # calls:
   #   - timestamp.set
   outDir: ./mappings/generated/types
@@ -37,11 +38,13 @@ mappings:
     #     specVersion: '[0,)'
     - event: nft.FixedPriceSaleList
       handler: nftFixedPriceSaleList
+    - event: nft.FixedPriceSaleComplete
+      handler: nftFixedPriceSaleComplete
   # extrinsicHandlers:
   #   - extrinsic: timestamp.set 
   #     handler: timestampCall
-  preBlockHooks:
-    - handler: preHook
-  postBlockHooks:
-    - handler: postHook
+  # preBlockHooks:
+  #   - handler: preHook
+  # postBlockHooks:
+  #   - handler: postHook
   

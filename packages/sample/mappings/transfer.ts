@@ -1,30 +1,22 @@
 import {
-  Transfer,
   BlockTimestamp,
   BlockHook,
   HookType,
+  Transfer,
   Account,
-  NftFixedPriceSale,
-  TokenId,
 } from '../generated/graphql-server/model'
 
 // run 'NODE_URL=<RPC_ENDPOINT> EVENTS=<comma separated list of events> yarn codegen:mappings-types'
 // to genenerate typescript classes for events, such as Balances.TransferEvent
-import { Balances, Nft } from './generated/types'
+import { Balances } from './generated/types'
 import BN from 'bn.js'
 import {
   EventContext,
   BlockContext,
   StoreContext,
-  DatabaseManager,
   FindOptionsWhere,
+  DatabaseManager,
 } from '@joystream/hydra-common'
-import {
-  FixedPriceSaleEventDto,
-  FixedPriceSaleEventMethod,
-  TokenIdDto,
-} from './sync-service/dto'
-import { listFixedPrice } from './sync-service/sync-service'
 
 const start = Date.now()
 const blockTime = 0
@@ -53,7 +45,7 @@ export async function balancesTransfer({
   event,
   block,
   extrinsic,
-}: EventContext & StoreContext) {
+}: EventContext & StoreContext): Promise<void> {
   const transfer = new Transfer()
   const [from, to, value] = new Balances.TransferEvent(event).params
   const fromAcc = await getOrCreate<Account>(Account, from.toString(), store)
@@ -86,73 +78,11 @@ export async function balancesTransfer({
   await store.save<Transfer>(transfer)
 }
 
-export async function nftFixedPriceSaleList({
-  store,
-  event,
-  block,
-  extrinsic,
-}: EventContext & StoreContext) {
-  const fixedPriceListing = new NftFixedPriceSale()
-
-  const [tokens, listingId, marketplaceId, price, paymentAsset, seller] =
-    new Nft.FixedPriceSaleListEvent(event).params
-
-  const fromAcc = await getOrCreate<Account>(Account, seller.toString(), store)
-  fromAcc.hex = seller.toHex()
-  fromAcc.balance = fromAcc.balance || new BN(0)
-  await store.save<Account>(fromAcc)
-
-  fixedPriceListing.listingId = listingId.toBn()
-  fixedPriceListing.marketplaceId = marketplaceId?.value.toBn()
-  fixedPriceListing.price = price.toBn()
-  fixedPriceListing.paymentAsset = paymentAsset.toBn()
-  fixedPriceListing.seller = fromAcc
-
-  await store.save<NftFixedPriceSale>(fixedPriceListing)
-
-  const tokensDto: TokenIdDto[] = []
-  for (const token of tokens) {
-    const tokenId = await getOrCreate<TokenId>(
-      TokenId,
-      `${token[0]} - ${token[1]}`,
-      store
-    )
-    tokenId.status = 'listing'
-    tokenId.collectionId = token[0]
-    tokenId.serialNumber = token[1]
-    tokenId.fixedPriceListingId = fixedPriceListing
-
-    tokensDto.push({
-      collectionId: token[0].toString(),
-      serialNumber: token[1].toString(),
-    })
-
-    await store.save<TokenId>(tokenId)
-  }
-
-  totalEvents++
-
-  // step: call sync service
-  const dto = new FixedPriceSaleEventDto()
-  dto.eventMethod = FixedPriceSaleEventMethod.FixedPriceSaleList
-  dto.blockHash = block.hash
-  dto.blockHeight = block.height
-  dto.extrinsicHash = extrinsic?.hash
-  dto.txIndex = event.indexInBlock
-  dto.tokens = tokensDto
-  dto.listingId = listingId.toString()
-  dto.marketplaceId = marketplaceId.toString()
-  dto.seller = seller.toString()
-  dto.price = price.toString()
-  dto.paymentAsset = paymentAsset.toString()
-  await listFixedPrice(dto)
-}
-
 // export async function timestampCall({
 //   store,
 //   event,
 //   block,
-// }: ExtrinsicContext & StoreContext) {
+// }: ExtrinsicContext & StoreContext): Promise<void> {
 //   const call = new Timestamp.SetCall(event)
 //   const ts = call.args.now.toBn()
 //   const blockTs = await store.get(BlockTimestamp, {
@@ -171,7 +101,7 @@ export async function nftFixedPriceSaleList({
 export async function preHook({
   block: { height, timestamp, hash },
   store,
-}: BlockContext & StoreContext) {
+}: BlockContext & StoreContext): Promise<void> {
   const hook = new BlockHook()
 
   const ts = new BlockTimestamp()
@@ -190,7 +120,7 @@ export async function preHook({
 export async function postHook({
   block: { height, hash },
   store,
-}: BlockContext & StoreContext) {
+}: BlockContext & StoreContext): Promise<void> {
   const hook = new BlockHook()
   hook.blockNumber = new BN(height)
 
