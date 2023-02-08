@@ -29,6 +29,7 @@
     "codegen": "DEBUG=${DEBUG} hydra-cli codegen",
     "typegen:configure": "NODE_URL=${NODE_URL:-ws://localhost:9000} envsub typegen.template.yml typegen.yml",
     "typegen": "rm -rf ./mappings/generated && hydra-typegen typegen manifest.yml --debug",
+    "typegen:local": "rm -rf ./mappings/generated && ../hydra-typegen/bin/run typegen manifest.yml --debug",
     "mappings:build": "yarn workspace sample-mappings build",
     "docker:build": "docker build . -f docker/Dockerfile.hydra -t hydra-kit:latest",
     "docker:db:up": "docker-compose up -d db",
@@ -41,7 +42,8 @@
   "dependencies": {
     "@types/bn.js": "^5.1.0",
     "bn.js": "^5.2.1",
-    "tslib": "^2.0.0"
+    "tslib": "^2.0.0",
+    "axios": "^1.3.2"
   },
   "devDependencies": {
     "@joystream/hydra-cli": "^4.0.0-alpha.10",

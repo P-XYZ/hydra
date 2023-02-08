@@ -1,26 +1,25 @@
 import {
-  Transfer,
   BlockTimestamp,
   BlockHook,
   HookType,
+  Transfer,
   Account,
 } from '../generated/graphql-server/model'
 
 // run 'NODE_URL=<RPC_ENDPOINT> EVENTS=<comma separated list of events> yarn codegen:mappings-types'
 // to genenerate typescript classes for events, such as Balances.TransferEvent
-import { Balances, Timestamp } from './generated/types'
+import { Balances } from './generated/types'
 import BN from 'bn.js'
 import {
-  ExtrinsicContext,
   EventContext,
   BlockContext,
   StoreContext,
-  DatabaseManager,
   FindOptionsWhere,
+  DatabaseManager,
 } from '@joystream/hydra-common'
 
 const start = Date.now()
-let blockTime = 0
+const blockTime = 0
 let totalEvents = 0
 let totalBlocks = 0
 
@@ -34,6 +33,7 @@ async function getOrCreate<T>(
   })
 
   if (entity === undefined) {
+    // eslint-disable-next-line new-cap
     entity = new e() as T
     ;(<any>entity).id = id
   }
@@ -45,7 +45,7 @@ export async function balancesTransfer({
   event,
   block,
   extrinsic,
-}: EventContext & StoreContext) {
+}: EventContext & StoreContext): Promise<void> {
   const transfer = new Transfer()
   const [from, to, value] = new Balances.TransferEvent(event).params
   const fromAcc = await getOrCreate<Account>(Account, from.toString(), store)
@@ -78,30 +78,30 @@ export async function balancesTransfer({
   await store.save<Transfer>(transfer)
 }
 
-export async function timestampCall({
-  store,
-  event,
-  block,
-}: ExtrinsicContext & StoreContext) {
-  const call = new Timestamp.SetCall(event)
-  const ts = call.args.now.toBn()
-  const blockTs = await store.get(BlockTimestamp, {
-    where: { timestamp: ts },
-  })
+// export async function timestampCall({
+//   store,
+//   event,
+//   block,
+// }: ExtrinsicContext & StoreContext): Promise<void> {
+//   const call = new Timestamp.SetCall(event)
+//   const ts = call.args.now.toBn()
+//   const blockTs = await store.get(BlockTimestamp, {
+//     where: { timestamp: ts },
+//   })
 
-  if (blockTs === undefined) {
-    throw new Error(`Expected the timestamp ${ts.toString()} to be saved`)
-  }
+//   if (blockTs === undefined) {
+//     throw new Error(`Expected the timestamp ${ts.toString()} to be saved`)
+//   }
 
-  if (block.timestamp !== ts.toNumber()) {
-    throw new Error(`Block timestamp should match the time int TimeStamp`)
-  }
-}
+//   if (block.timestamp !== ts.toNumber()) {
+//     throw new Error(`Block timestamp should match the time int TimeStamp`)
+//   }
+// }
 
 export async function preHook({
   block: { height, timestamp, hash },
   store,
-}: BlockContext & StoreContext) {
+}: BlockContext & StoreContext): Promise<void> {
   const hook = new BlockHook()
 
   const ts = new BlockTimestamp()
@@ -120,7 +120,7 @@ export async function preHook({
 export async function postHook({
   block: { height, hash },
   store,
-}: BlockContext & StoreContext) {
+}: BlockContext & StoreContext): Promise<void> {
   const hook = new BlockHook()
   hook.blockNumber = new BN(height)
 
