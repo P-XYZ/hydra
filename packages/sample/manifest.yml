@@ -30,7 +30,7 @@ mappings:
   mappingsModule: mappings/lib/mappings
   imports:
     - mappings/lib/mappings/generated/types
-  range: '[2608887, 2608888)'
+  range: '[2608888,)'
   eventHandlers:
     # - event: balances.Transfer 
     #   handler: balancesTransfer
